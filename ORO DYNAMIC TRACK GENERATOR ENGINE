@@ -1,0 +1,65 @@
+/**
+ * OROBORO DYNAMIC TRACK GENERATOR ENGINE
+ * Generates custom CatmullRom spline vectors within defined spatial boundaries.
+ */
+
+class OroboroTrackGenerator {
+    constructor(boundaries = { xMin: -50, xMax: 50, yMin: -2, yMax: 35, zMin: -30, zMax: 30 }) {
+        this.bounds = boundaries;
+        this.activePoints = [];
+    }
+
+    // Generate a secure, bounded random float between min and max
+    _randomRange(min, max) {
+        return min + Math.random() * (max - min);
+    }
+
+    /**
+     * Generates a new sequence of track nodes adhering strictly to system boundaries.
+     * @param {number} nodeCount - Total control points for the curve
+     * @returns {Array<THREE.Vector3>} Array of valid 3D coordinates
+     */
+    generateTrack(nodeCount = 8) {
+        this.activePoints = [];
+        
+        for (let i = 0; i < nodeCount; i++) {
+            // Keep points fluid yet safely contained within stage dimensions
+            const x = this._randomRange(this.bounds.xMin, this.bounds.xMax);
+            const y = this._randomRange(this.bounds.yMin, this.bounds.yMax);
+            const z = this._randomRange(this.bounds.zMin, this.bounds.zMax);
+            
+            this.activePoints.push(new THREE.Vector3(x, y, z));
+        }
+
+        // Ensure path loops smoothly back to origin sector
+        if (this.activePoints.length > 0) {
+            this.activePoints.push(this.activePoints[0].clone());
+        }
+
+        return this.activePoints;
+    }
+
+    /**
+     * Binds generated track directly to an existing Three.js scene and mesh reference.
+     */
+    updateSceneTrack(scene, oldMesh, curve) {
+        if (oldMesh) scene.remove(oldMesh);
+
+        const newGeometry = new THREE.TubeGeometry(curve, 200, 0.4, 8, true);
+        const newMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.6
+        });
+
+        const newMesh = new THREE.Mesh(newGeometry, newMaterial);
+        scene.add(newMesh);
+        return newMesh;
+    }
+}
+
+// --- EXECUTION EXAMPLE ---
+// const generator = new OroboroTrackGenerator();
+// const rawPoints = generator.generateTrack(9);
+// const dynamicCurve = new THREE.CatmullRomCurve3(rawPoints, true);
